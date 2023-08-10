@@ -7,7 +7,6 @@ import uuid
 import random
 from datetime import datetime, timedelta
 
-
 # Create Order objects and Produce to Kafka
 # (self, id, user_id, total, status, address_id, payment_id, created_at, modified_at)
 def create_orders():
@@ -45,14 +44,18 @@ def create_orders():
         orders.append(order)
     return orders
 
+running = True
+
 producer = OrderProducer(1)
 
 def produce_orders():
+    global running
     orders = create_orders()
-    while True:
-        time.sleep(1 / producer.frequency)
+    while running:
+        sleep_time = 1 /producer.frequency
+        time.sleep(sleep_time)
         for order in orders:
-            print(f"Producing order: {order}")
+            print(f"Producing order: {order.total}\nAt frequency: {sleep_time}\n")
             producer.produce_order(order)
 
 
@@ -70,6 +73,11 @@ def set_frequency():
         return jsonify({"error": str(e)}), 400
 
 if __name__ == '__main__':
-    t = threading.Thread(target=produce_orders)
-    t.start()
-    app.run(host="0.0.0.0", port=5000)
+    try:
+        t = threading.Thread(target=produce_orders)
+        t.start()
+        app.run(host="0.0.0.0", port=5000)
+    except:
+        print("Sutting down...")
+        running = False
+        t.join()
