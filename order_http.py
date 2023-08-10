@@ -45,15 +45,15 @@ def create_orders():
         orders.append(order)
     return orders
 
-orders = create_orders()
-for order in orders:
-    print(f"Producing order: {order}")
-    producer = OrderProducer(1, order)
+producer = OrderProducer(1)
 
 def produce_orders():
+    orders = create_orders()
     while True:
         time.sleep(1 / producer.frequency)
-        producer.produce_order()
+        for order in orders:
+            print(f"Producing order: {order}")
+            producer.produce_order(order)
 
 
 # Flask app 
@@ -68,13 +68,6 @@ def set_frequency():
         return jsonify({"message": f"Frequency set to {frequency}"}), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-
-@app.route('/set_order', methods=['POST'])
-def set_order():
-    order_data = request.json['order']
-    order = Order(order_data['id'], order_data['product'], order_data['quantity'], order_data['price'])
-    producer.set_order(order)
-    return "Order set"
 
 if __name__ == '__main__':
     t = threading.Thread(target=produce_orders)

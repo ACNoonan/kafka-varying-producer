@@ -23,5 +23,5 @@ def set_frequency_to_10():
 
 # Example usage
 if __name__ == "__main__":
-    set_frequency_to_1000()
-    #set_frequency_to_10()
+    #set_frequency_to_1000()
+    set_frequency_to_10()
