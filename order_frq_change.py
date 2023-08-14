@@ -14,7 +14,7 @@ def set_frequency_to_1000():
 
 # Function to change the frequency to 10
 def set_frequency_to_10():
-    frequency = 10
+    frequency = 0.0001
     response = requests.post(f"{BASE_URL}/set_frequency", json={'frequency': frequency})
     if response.status_code == 200:
         print(f"Frequency successfully set to {frequency}")

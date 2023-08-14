@@ -24,6 +24,13 @@ def create_orders():
         end_date = datetime.now()
         start_date = end_date - timedelta(weeks=1)
         create_date = start_date + (end_date - start_date) * random.random()
+        # Create random items
+        items = []
+        for item_index in range(random.randint(1, 5)):
+            item_id = str(uuid.uuid4())
+            quantity = random.randint(1, 10)
+            price = round(random.uniform(1, 100), 2)
+            items.append({"item_id": item_id, "quantity": quantity, "price": price})
         #Generate random modified_at date with 80% of null, 20% chance of being within the last week
         modified_chance = random.random()
         if modified_chance < 0.8:
@@ -38,6 +45,7 @@ def create_orders():
             status=status,
             address_id=uuid.uuid4(),
             payment_id=uuid.uuid4(),
+            items=items,
             created_at=create_date,
             modified_at=modified_date
         )
