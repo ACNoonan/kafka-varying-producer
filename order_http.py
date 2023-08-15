@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, requests, request, jsonify
 from order_prod import OrderProducer
 from order_struct import Order
 import threading
@@ -6,6 +6,51 @@ import time
 import uuid
 import random
 from datetime import datetime, timedelta
+import os
+import json
+
+LENSES_API_URL = os.getenv('LENSES_API_URL')
+LENSES_API_KEY = os.getenv('LENSES_API_KEY')
+KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS')
+KAFKA_PASSWORD = os.getenv('KAFKA_PASSWORD')
+
+# Optionally, you can handle cases where the variables are not set
+if None in [LENSES_API_URL, LENSES_API_KEY, KAFKA_BOOTSTRAP_SERVERS, KAFKA_PASSWORD]:
+    print("One or more required environment variables are not set.")
+else:
+    print("All required environment variables are set.")
+
+# Register Application with Lenses
+url = f"http://{LENSES_API_URL}/api/v1/apps/external"
+
+payload = json.dumps({
+  "name": "Orders-MicroService",
+  "metadata": {
+    "version": "1.0",
+    "description": "Variable producer for orders event sourcing",
+    "owner": "Adam",
+    "appType": "stream-generator",
+    "tags": [
+      "workshop",
+      "orders",
+      "Adam",
+      "Dev",
+      "SLA:1"
+    ],
+    "deployment": "k8s"
+  },
+  "output": [
+    {
+      "name": "orders_topic"
+    }
+  ]
+})
+
+headers = {
+  'X-Kafka-Lenses-Token': f'{LENSES_API_KEY}',
+  'Content-Type': 'application/json'
+}
+response = requests.request("POST", url, headers=headers, data=payload)
 
 # Create Order objects and Produce to Kafka
 # (self, id, user_id, total, status, address_id, payment_id, created_at, modified_at)

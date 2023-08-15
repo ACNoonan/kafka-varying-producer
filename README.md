@@ -1,4 +1,5 @@
 # kafka-varying-producer
+
 A Kafka Producer in Python that has a REST API endpoint for changing frequency of messages being produced.
 
 Designed to be the template for future mock data generators to use in educational workshops for Lenses.io.
