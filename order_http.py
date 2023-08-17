@@ -7,6 +7,7 @@ import uuid
 import random
 from datetime import datetime, timedelta
 import os
+import linecache
 import json
 
 LENSES_API_URL = os.getenv('LENSES_API_URL')
@@ -14,43 +15,52 @@ LENSES_API_KEY = os.getenv('LENSES_API_KEY')
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS')
 KAFKA_PASSWORD = os.getenv('KAFKA_PASSWORD')
 
-# Optionally, you can handle cases where the variables are not set
+USER_UUID_FILE = '../user_ids.txt'
+
+# Error logging of missing environment variables
 if None in [LENSES_API_URL, LENSES_API_KEY, KAFKA_BOOTSTRAP_SERVERS, KAFKA_PASSWORD]:
     print("One or more required environment variables are not set.")
 else:
     print("All required environment variables are set.")
 
 # Register Application with Lenses
-url = f"http://{LENSES_API_URL}/api/v1/apps/external"
+def register_app():
+    url = f"http://{LENSES_API_URL}/api/v1/apps/external"
 
-payload = json.dumps({
-  "name": "Orders-MicroService",
-  "metadata": {
-    "version": "1.0",
-    "description": "Variable producer for orders event sourcing",
-    "owner": "Adam",
-    "appType": "stream-generator",
-    "tags": [
-      "workshop",
-      "orders",
-      "Adam",
-      "Dev",
-      "SLA:1"
-    ],
-    "deployment": "k8s"
-  },
-  "output": [
-    {
-      "name": "orders_topic"
+    payload = json.dumps({
+      "name": "Users-MicroService",
+      "metadata": {
+        "version": "1.0",
+        "description": "Variable producer for user account event sourcing",
+        "owner": "Adam",
+        "appType": "stream-generator",
+        "tags": [
+          "workshop",
+          "users",
+          "Adam",
+          "Dev",
+          "SLA:1"
+        ],
+        "deployment": "k8s"
+      },
+      "output": [
+        {
+          "name": "users_topic"
+        }
+      ]
+    })
+
+    headers = {
+      'X-Kafka-Lenses-Token': f'{LENSES_API_KEY}',
+      'Content-Type': 'application/json'
     }
-  ]
-})
+    response = requests.request("POST", url, headers=headers, data=payload)
 
-headers = {
-  'X-Kafka-Lenses-Token': f'{LENSES_API_KEY}',
-  'Content-Type': 'application/json'
-}
-response = requests.request("POST", url, headers=headers, data=payload)
+# Get user IDs
+def get_user_uuid(line_number):
+    return linecache.getline(USER_UUID_FILE, line_number).strip()
+num_user_uuids = sum(1 for line in open(USER_UUID_FILE))
+
 
 # Create Order objects and Produce to Kafka
 # (self, id, user_id, total, status, address_id, payment_id, created_at, modified_at)
@@ -58,6 +68,10 @@ def create_orders():
     orders = []
     rand_iterations = random.randint(1, 100)
     for i in range(1, rand_iterations):
+        # Get User id from file
+        random_line_number = random.randit(1, num_user_uuids)
+        user_id_from_file = get_user_uuid(random_line_number)
+        # TODO: Erase total and calculate total from items
         # Create random total
         random_number = random.uniform(10, 100)
         random_total = round(random_number, 2)
@@ -74,8 +88,8 @@ def create_orders():
         for item_index in range(random.randint(1, 5)):
             item_id = str(uuid.uuid4())
             quantity = random.randint(1, 10)
-            price = round(random.uniform(1, 100), 2)
-            items.append({"item_id": item_id, "quantity": quantity, "price": price})
+            #price = round(random.uniform(1, 100), 2)
+            items.append({"item_id": item_id, "quantity": quantity})
         #Generate random modified_at date with 80% of null, 20% chance of being within the last week
         modified_chance = random.random()
         if modified_chance < 0.8:
@@ -85,7 +99,7 @@ def create_orders():
 
         order = Order(
             id=uuid.uuid4(),
-            user_id=uuid.uuid4(),
+            user_id=user_id_from_file,
             total=random_total,
             status=status,
             address_id=uuid.uuid4(),
@@ -98,7 +112,7 @@ def create_orders():
     return orders
 
 running = True
-
+register_app()
 producer = OrderProducer(1)
 
 def produce_orders():
